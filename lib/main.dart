@@ -209,11 +209,24 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(
+      () =>
+          Provider.of<TaskProvider>(context, listen: false).fetchTasksFromApi(),
+    );
   }
 
   Widget _buildHomePage() {
     final taskProvider = Provider.of<TaskProvider>(context);
     final inProgressTasks = taskProvider.inProgressTasks;
+
+    if (taskProvider.isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xff304b46)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xffe3ece7),
       body: Stack(
@@ -344,14 +357,28 @@ class _HomePageState extends State<HomePage> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final task = inProgressTasks[index];
-                    return _taskRow(
-                      title: task["title"]!,
-                      desc: task["desc"]!,
-                      time: task["time"]!,
-                    );
-                  }, childCount: inProgressTasks.length),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final taskProvider = Provider.of<TaskProvider>(context);
+                      final currentList = _tabIndex == 2
+                          ? taskProvider.completedTasks
+                          : taskProvider.inProgressTasks;
+                      final task = currentList[index];
+                      return _taskRow(
+                        title: task["title"]!,
+                        desc: task["desc"]!,
+                        time: task["time"]!,
+                        index: index,
+                      );
+                    },
+                    childCount: _tabIndex == 2
+                        ? Provider.of<TaskProvider>(
+                            context,
+                          ).completedTasks.length
+                        : Provider.of<TaskProvider>(
+                            context,
+                          ).inProgressTasks.length,
+                  ),
                 ),
               ),
             ],
@@ -552,6 +579,7 @@ class _HomePageState extends State<HomePage> {
     required String title,
     required String desc,
     required String time,
+    required int index,
   }) {
     return Container(
       padding: const EdgeInsets.all(15),
@@ -562,6 +590,30 @@ class _HomePageState extends State<HomePage> {
       ),
       child: Row(
         children: [
+          // TOMBOL CENTANG
+          GestureDetector(
+            onTap: () {
+              Provider.of<TaskProvider>(
+                context,
+                listen: false,
+              ).completeTask(index);
+            },
+            child: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _tabIndex == 2
+                    ? const Color(0xff304b46)
+                    : Colors.transparent,
+                border: Border.all(color: const Color(0xff304b46), width: 2),
+              ),
+              child: _tabIndex == 2
+                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                  : const SizedBox(),
+            ),
+          ),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

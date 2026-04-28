@@ -1,0 +1,4 @@
+- [x] Update main.dart to support dark/light theme globally
+- [x] Make ProfilePage stateful and add functionality to edit name via dialog
+- [x] Add settings dialog with dark/light mode toggle in ProfilePage
+- [x] Test the changes

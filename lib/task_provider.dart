@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class TaskProvider extends ChangeNotifier {
@@ -15,8 +16,47 @@ class TaskProvider extends ChangeNotifier {
     ..._completedTasks,
   ];
 
-  // FETCH DARI API
+  // SIMPAN KE LOCAL STORAGE
+  Future<void> _saveToLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('inProgressTasks', jsonEncode(_inProgressTasks));
+    prefs.setString('completedTasks', jsonEncode(_completedTasks));
+  }
+
+  // BACA DARI LOCAL STORAGE
+  Future<void> loadFromLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final inProgress = prefs.getString('inProgressTasks');
+    final completed = prefs.getString('completedTasks');
+
+    if (inProgress != null) {
+      final List decoded = jsonDecode(inProgress);
+      _inProgressTasks = decoded
+          .map((e) => Map<String, String>.from(e))
+          .toList();
+    }
+
+    if (completed != null) {
+      final List decoded = jsonDecode(completed);
+      _completedTasks = decoded
+          .map((e) => Map<String, String>.from(e))
+          .toList();
+    }
+
+    notifyListeners();
+  }
+
+  // FETCH DARI API (hanya kalau local storage kosong)
   Future<void> fetchTasksFromApi() async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString('inProgressTasks');
+
+    // kalau sudah ada data lokal, pakai itu saja
+    if (existing != null) {
+      await loadFromLocal();
+      return;
+    }
+
     isLoading = true;
     notifyListeners();
 
@@ -26,7 +66,6 @@ class TaskProvider extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
         _inProgressTasks = [
           {
             "title": "Tugas Algoritma",
@@ -54,6 +93,9 @@ class TaskProvider extends ChangeNotifier {
             "time": "Deadline 19:00 - 20:00",
           },
         ];
+
+        // simpan ke local setelah fetch
+        await _saveToLocal();
       }
     } catch (e) {
       print("Error fetch API: $e");
@@ -64,23 +106,26 @@ class TaskProvider extends ChangeNotifier {
   }
 
   // TAMBAH TASK
-  void addTask(Map<String, String> task) {
+  Future<void> addTask(Map<String, String> task) async {
     _inProgressTasks.add(task);
+    await _saveToLocal();
     notifyListeners();
   }
 
   // HAPUS TASK
-  void removeTask(int index) {
+  Future<void> removeTask(int index) async {
     _inProgressTasks.removeAt(index);
+    await _saveToLocal();
     notifyListeners();
   }
 
   // PINDAH KE COMPLETED
-  void completeTask(int index) {
+  Future<void> completeTask(int index) async {
     final task = Map<String, String>.from(_inProgressTasks[index]);
     task["desc"] = "Sudah selesai";
     _completedTasks.add(task);
     _inProgressTasks.removeAt(index);
+    await _saveToLocal();
     notifyListeners();
   }
 }

@@ -4,11 +4,15 @@ import 'package:flutter_application_1/ProfilePage.dart';
 import 'package:flutter_application_1/TaskListPage.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_1/task_provider.dart';
+import 'providers/auth_provider.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => TaskProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
       child: const FlexFlowApp(),
     ),
   );
@@ -58,10 +62,11 @@ class _FlexFlowAppState extends State<FlexFlowApp> {
   }
 }
 
+// =====================
 // LOGIN PAGE
-//
+// =====================
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   final VoidCallback toggleTheme;
   final bool isDarkMode;
 
@@ -72,7 +77,45 @@ class LoginPage extends StatelessWidget {
   });
 
   @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    final auth = context.read<AuthProvider>();
+
+    final success = await auth.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    if (success && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HomePage(
+            toggleTheme: widget.toggleTheme,
+            isDarkMode: widget.isDarkMode,
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
       backgroundColor: const Color(0xffe3ece7),
       body: Center(
@@ -89,6 +132,8 @@ class LoginPage extends StatelessWidget {
 
               // Email
               TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.email_outlined),
                   labelText: "Email",
@@ -101,6 +146,7 @@ class LoginPage extends StatelessWidget {
 
               // Password
               TextField(
+                controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.lock_outline),
@@ -110,6 +156,23 @@ class LoginPage extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 8),
+
+              // Pesan error validasi
+              if (auth.errorMessage != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Text(
+                    auth.errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                ),
 
               const SizedBox(height: 10),
               const Align(
@@ -118,35 +181,28 @@ class LoginPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Login Button
+              // Tombol Login
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => HomePage(
-                          toggleTheme: toggleTheme,
-                          isDarkMode: isDarkMode,
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: auth.isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black87,
                   ),
-                  child: const Text("Login"),
+                  child: auth.isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "Login",
+                          style: TextStyle(color: Colors.white),
+                        ),
                 ),
               ),
 
               const SizedBox(height: 20),
               const Text("— or Login with —"),
-
               const SizedBox(height: 20),
 
-              // Apple & Google Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -182,7 +238,6 @@ class LoginPage extends StatelessWidget {
     );
   }
 }
-
 // HOME PAGE WITH BOTTOM NAVIGATION
 
 class HomePage extends StatefulWidget {
@@ -203,7 +258,6 @@ class _HomePageState extends State<HomePage> {
   int _tabIndex = 0;
   int _navIndex = 0;
 
-  // Task lists
   List<Map<String, String>> _inProgressTasks = [];
 
   @override
@@ -217,7 +271,6 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildHomePage() {
     final taskProvider = Provider.of<TaskProvider>(context);
-    final inProgressTasks = taskProvider.inProgressTasks;
 
     if (taskProvider.isLoading) {
       return const Scaffold(
@@ -233,7 +286,6 @@ class _HomePageState extends State<HomePage> {
         children: [
           CustomScrollView(
             slivers: [
-              // HEADER HIJAU
               SliverToBoxAdapter(
                 child: Container(
                   width: double.infinity,
@@ -270,25 +322,28 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           const SizedBox(width: 15),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                "Good Evening!",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 24,
+                          // NAMA DARI AUTH PROVIDER
+                          Consumer<AuthProvider>(
+                            builder: (context, auth, _) => Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Good Evening!",
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 24,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                "Erik Smith",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
+                                Text(
+                                  auth.user?.name ?? 'User',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -332,8 +387,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-
-              // TITLE TODAY TASKS
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(22, 18, 22, 10),
@@ -352,8 +405,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-
-              // LIST TUGAS
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
                 sliver: SliverList(
@@ -383,8 +434,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-
-          // FLOATING BUTTON
           Positioned(
             right: 20,
             bottom: 20,
@@ -405,10 +454,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _onTaskCompleted(int index) {
-    Provider.of<TaskProvider>(context, listen: false).completeTask(index);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -417,18 +462,15 @@ class _HomePageState extends State<HomePage> {
         currentIndex: _navIndex,
         onTap: (index) {
           if (index == 0) {
-            // Home - stay on current page
             setState(() {
               _navIndex = 0;
             });
           } else if (index == 1) {
-            // Calendar - navigate to calendar page
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const CalendarPage()),
             );
           } else if (index == 2) {
-            // Tasks - navigate to task list page
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -441,7 +483,6 @@ class _HomePageState extends State<HomePage> {
               ),
             );
           } else if (index == 3) {
-            // Profile - navigate to profile page
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -468,7 +509,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // MODAL ADD TASK menambahkan tugas yg baru di tombol plus
   void _addTaskModal() {
     TextEditingController titleC = TextEditingController();
     TextEditingController descC = TextEditingController();
@@ -489,26 +529,21 @@ class _HomePageState extends State<HomePage> {
                 "Add New Task",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-
               TextField(
                 controller: titleC,
                 decoration: const InputDecoration(labelText: "Title"),
               ),
-
               TextField(
                 controller: descC,
                 decoration: const InputDecoration(labelText: "Description"),
               ),
-
               TextField(
                 controller: timeC,
                 decoration: const InputDecoration(
                   labelText: "Time (10:00 - 11:00)",
                 ),
               ),
-
               const SizedBox(height: 15),
-
               ElevatedButton(
                 onPressed: () {
                   Provider.of<TaskProvider>(context, listen: false).addTask({
@@ -527,7 +562,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // COMPONENTS (Tab, Card, Row)
   Widget _tabItem(String text, {bool isSelected = false}) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 5),
@@ -558,18 +592,18 @@ class _HomePageState extends State<HomePage> {
         children: [
           Row(
             children: [
-              _taskTag("Kerja", Color(0xffd5c9ff)),
-              SizedBox(width: 6),
-              _taskTag("Penting", Color(0xffffd4d4)),
+              _taskTag("Kerja", const Color(0xffd5c9ff)),
+              const SizedBox(width: 6),
+              _taskTag("Penting", const Color(0xffffd4d4)),
             ],
           ),
-          SizedBox(height: 10),
-          Text(
+          const SizedBox(height: 10),
+          const Text(
             "Jadwalin harimu sekarang",
             style: TextStyle(fontWeight: FontWeight.w700),
           ),
-          SizedBox(height: 8),
-          Text("Mon, 12 July 2022", style: TextStyle(color: Colors.grey)),
+          const SizedBox(height: 8),
+          const Text("Mon, 12 July 2022", style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
@@ -590,7 +624,6 @@ class _HomePageState extends State<HomePage> {
       ),
       child: Row(
         children: [
-          // TOMBOL CENTANG
           GestureDetector(
             onTap: () {
               Provider.of<TaskProvider>(

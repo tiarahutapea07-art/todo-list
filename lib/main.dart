@@ -5,6 +5,7 @@ import 'package:flutter_application_1/TaskListPage.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_1/task_provider.dart';
 import 'providers/auth_provider.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(
@@ -62,9 +63,7 @@ class _FlexFlowAppState extends State<FlexFlowApp> {
   }
 }
 
-// =====================
 // LOGIN PAGE
-// =====================
 
 class LoginPage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -539,9 +538,7 @@ class _HomePageState extends State<HomePage> {
               ),
               TextField(
                 controller: timeC,
-                decoration: const InputDecoration(
-                  labelText: "Time (10:00 - 11:00)",
-                ),
+                decoration: const InputDecoration(labelText: "Deadline"),
               ),
               const SizedBox(height: 15),
               ElevatedButton(
@@ -549,7 +546,7 @@ class _HomePageState extends State<HomePage> {
                   Provider.of<TaskProvider>(context, listen: false).addTask({
                     "title": titleC.text,
                     "desc": descC.text,
-                    "time": timeC.text,
+                    "time": "Deadline: ${timeC.text}",
                   });
                   Navigator.pop(context);
                 },
@@ -602,8 +599,10 @@ class _HomePageState extends State<HomePage> {
             "Jadwalin harimu sekarang",
             style: TextStyle(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 8),
-          const Text("Mon, 12 July 2022", style: TextStyle(color: Colors.grey)),
+          Text(
+            DateFormat('EEE, dd MMMM yyyy').format(DateTime.now()),
+            style: const TextStyle(color: Colors.grey),
+          ),
         ],
       ),
     );

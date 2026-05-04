@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart'; // sesuaikan path kalau beda
 
 class ProfilePage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -15,69 +17,25 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String _name = "Erik Smith";
-
-  void _editProfile() {
-    TextEditingController nameController = TextEditingController(text: _name);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Edit Profile"),
-          content: TextField(
-            controller: nameController,
-            decoration: const InputDecoration(labelText: "Name"),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _name = nameController.text;
-                });
-                Navigator.pop(context);
-              },
-              child: const Text("Save"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _showSettings() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Settings"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Dark Mode"),
-                  Switch(
-                    value: widget.isDarkMode,
-                    onChanged: (value) {
-                      widget.toggleTheme();
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
+              const Text("Dark Mode"),
+              Switch(
+                value: widget.isDarkMode,
+                onChanged: (value) {
+                  widget.toggleTheme();
+                  Navigator.pop(context);
+                },
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Close"),
-            ),
-          ],
         );
       },
     );
@@ -85,6 +43,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+
     return Scaffold(
       backgroundColor: const Color(0xffe3ece7),
       appBar: AppBar(
@@ -101,18 +62,23 @@ class _ProfilePageState extends State<ProfilePage> {
               backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=3"),
             ),
             const SizedBox(height: 20),
+
             Text(
-              _name,
+              user?.name ?? 'Guest',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+
             const SizedBox(height: 10),
-            const Text(
-              "erik.smith@example.com",
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+
+            Text(
+              user?.email ?? '-',
+              style: const TextStyle(color: Colors.grey, fontSize: 16),
             ),
+
             const SizedBox(height: 30),
+
             GestureDetector(
-              onTap: _editProfile,
+              onTap: () {},
               child: _profileOption("Edit Profile", Icons.edit),
             ),
             GestureDetector(
@@ -120,7 +86,14 @@ class _ProfilePageState extends State<ProfilePage> {
               child: _profileOption("Settings", Icons.settings),
             ),
             _profileOption("Help & Support", Icons.help),
-            _profileOption("Logout", Icons.logout),
+
+            GestureDetector(
+              onTap: () {
+                authProvider.logout();
+                Navigator.pop(context);
+              },
+              child: _profileOption("Logout", Icons.logout),
+            ),
           ],
         ),
       ),

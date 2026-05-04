@@ -1,34 +1,23 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 
 class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _token;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _user != null;
   String? get errorMessage => _errorMessage;
+  String? get token => _token;
 
-  Future<bool> login(String email, String password) async {
-    // validasi kosong
-    if (email.isEmpty || password.isEmpty) {
-      _errorMessage = 'Email dan password tidak boleh kosong';
-      notifyListeners();
-      return false;
-    }
-
-    // validasi format email
-    if (!email.contains('@')) {
-      _errorMessage = 'Format email tidak valid';
-      notifyListeners();
-      return false;
-    }
-
-    // validasi panjang password
-    if (password.length < 6) {
-      _errorMessage = 'Password minimal 6 karakter';
+  Future<bool> login(String username, String password) async {
+    if (username.isEmpty || password.isEmpty) {
+      _errorMessage = 'Username dan password tidak boleh kosong';
       notifyListeners();
       return false;
     }
@@ -37,22 +26,46 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    // simulasi API call (nanti ganti dengan http request ke backend)
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final response = await http.post(
+        Uri.parse('https://dummyjson.com/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username, 'password': password}),
+      );
 
-    // simulasi login berhasil — nanti diganti response dari API
-    _user = UserModel(
-      name: 'Erik Smith',
-      email: email,
-    );
+      final data = jsonDecode(response.body);
 
-    _isLoading = false;
-    notifyListeners();
-    return true;
+      if (response.statusCode == 200) {
+        _token = data['accessToken'];
+
+        _user = UserModel(
+          name: '${data['firstName']} ${data['lastName']}',
+          email: data['email'],
+        );
+
+        return true;
+      } else {
+        _errorMessage = data['message'] ?? 'Login gagal';
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Tidak bisa terhubung ke API';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void logout() {
     _user = null;
+    _token = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
     notifyListeners();
   }
 }

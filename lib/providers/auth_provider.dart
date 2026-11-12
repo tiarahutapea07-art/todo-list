@@ -1,9 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 
 class AuthProvider extends ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   UserModel? _user;
   bool _isLoading = false;
   String? _errorMessage;
@@ -15,9 +16,9 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String? get token => _token;
 
-  Future<bool> login(String username, String password) async {
-    if (username.isEmpty || password.isEmpty) {
-      _errorMessage = 'Username dan password tidak boleh kosong';
+  Future<bool> login(String email, String password) async {
+    if (email.isEmpty || password.isEmpty) {
+      _errorMessage = 'Email dan password tidak boleh kosong';
       notifyListeners();
       return false;
     }
@@ -27,29 +28,49 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await http.post(
-        Uri.parse('https://dummyjson.com/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
 
-      final data = jsonDecode(response.body);
+      final firebaseUser = credential.user;
 
-      if (response.statusCode == 200) {
-        _token = data['accessToken'];
-
+      if (firebaseUser != null) {
         _user = UserModel(
-          name: '${data['firstName']} ${data['lastName']}',
-          email: data['email'],
+          name:
+              firebaseUser.displayName ??
+              firebaseUser.email?.split('@').first ??
+              'User',
+          email: firebaseUser.email ?? '',
         );
 
+        _token = await firebaseUser.getIdToken();
         return true;
-      } else {
-        _errorMessage = data['message'] ?? 'Login gagal';
-        return false;
       }
+
+      _errorMessage = 'Login gagal';
+      return false;
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'user-not-found':
+          _errorMessage = 'Akun tidak ditemukan';
+          break;
+        case 'wrong-password':
+        case 'invalid-credential':
+          _errorMessage = 'Email atau password salah';
+          break;
+        case 'invalid-email':
+          _errorMessage = 'Format email tidak valid';
+          break;
+        case 'too-many-requests':
+          _errorMessage = 'Terlalu banyak percobaan login';
+          break;
+        default:
+          _errorMessage = e.message ?? 'Login gagal';
+      }
+      return false;
     } catch (e) {
-      _errorMessage = 'Tidak bisa terhubung ke API';
+      _errorMessage = 'Terjadi kesalahan: $e';
       return false;
     } finally {
       _isLoading = false;
@@ -57,7 +78,8 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void logout() {
+  Future<void> logout() async {
+    await _auth.signOut();
     _user = null;
     _token = null;
     _errorMessage = null;

@@ -1,32 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/CalendarPage.dart';
-import 'package:flutter_application_1/ProfilePage.dart';
-import 'package:flutter_application_1/TaskListPage.dart';
+import 'package:flutter_application_1/profile_page.dart';
+import 'package:flutter_application_1/tas_list_page.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_1/task_provider.dart';
 import 'providers/auth_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TaskProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
-      child: const FlexFlowApp(),
+      child: const TaskFlowApp(),
     ),
   );
 }
 
-class FlexFlowApp extends StatefulWidget {
-  const FlexFlowApp({super.key});
+class TaskFlowApp extends StatefulWidget {
+  const TaskFlowApp({super.key});
 
   @override
-  State<FlexFlowApp> createState() => _FlexFlowAppState();
+  State<TaskFlowApp> createState() => _TaskFlowAppState();
 }
 
-class _FlexFlowAppState extends State<FlexFlowApp> {
+class _TaskFlowAppState extends State<TaskFlowApp> {
   bool _isDarkMode = false;
 
   void _toggleTheme() {
@@ -124,7 +130,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                "Flex Flow To Do List",
+                "TaskFlow",
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 40),

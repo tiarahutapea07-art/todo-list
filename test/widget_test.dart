@@ -13,7 +13,7 @@ import 'package:flutter_application_1/main.dart';
 void main() {
   testWidgets('App builds without errors', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const FlexFlowApp());
+    await tester.pumpWidget(const TaskFlowApp());
 
     // Verify that the login page is displayed
     expect(find.text('Flex Flow To Do List'), findsOneWidget);

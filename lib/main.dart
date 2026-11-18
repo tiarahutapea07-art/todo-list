@@ -8,6 +8,7 @@ import 'providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:flutter_application_1/search_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -208,15 +209,6 @@ class _LoginPageState extends State<LoginPage> {
               const Text("— or Login with —"),
               const SizedBox(height: 20),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _socialButton("Apple", Icons.apple),
-                  const SizedBox(width: 15),
-                  _socialButton("Google", Icons.android),
-                ],
-              ),
-
               const SizedBox(height: 30),
               GestureDetector(
                 onTap: () {},
@@ -306,14 +298,39 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: const [
-                          Spacer(),
-                          Icon(Icons.search, color: Colors.white, size: 26),
-                          SizedBox(width: 12),
-                          Icon(
-                            Icons.notifications_none,
-                            color: Colors.white,
-                            size: 26,
+                        children: [
+                          const Spacer(),
+
+                          // Tombol Search
+                          IconButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SearchPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.search,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Tombol Notification
+                          IconButton(
+                            onPressed: () {
+                              debugPrint('Tombol Notification diklik');
+                              _showNotificationDialog();
+                            },
+                            icon: const Icon(
+                              Icons.notifications_none,
+                              color: Colors.white,
+                              size: 26,
+                            ),
                           ),
                         ],
                       ),
@@ -453,6 +470,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Fungsi Notification
+  void _showNotificationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Notifications"),
+          content: const Text("Belum ada notifikasi."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _onTabTapped(int index) {
     setState(() {
       _tabIndex = index;
@@ -515,51 +551,265 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _addTaskModal() {
-    TextEditingController titleC = TextEditingController();
-    TextEditingController descC = TextEditingController();
-    TextEditingController timeC = TextEditingController();
+    String taskTitle = '';
+    String taskDescription = '';
+
+    DateTime? selectedDate;
 
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Add New Task",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (modalContext, setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                left: 22,
+                right: 22,
+                top: 15,
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom + 25,
               ),
-              TextField(
-                controller: titleC,
-                decoration: const InputDecoration(labelText: "Title"),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               ),
-              TextField(
-                controller: descC,
-                decoration: const InputDecoration(labelText: "Description"),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    const Text(
+                      "Create New Task",
+                      style: TextStyle(
+                        fontSize: 23,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xff304b46),
+                      ),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    const Text(
+                      "Task Name",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff304b46),
+                      ),
+                    ),
+
+                    const SizedBox(height: 9),
+
+                    TextField(
+                      onChanged: (value) {
+                        taskTitle = value;
+                      },
+                      decoration: InputDecoration(
+                        hintText: "Masukkan nama tugas...",
+                        filled: true,
+                        fillColor: const Color(0xfff2f6f3),
+                        prefixIcon: const Icon(
+                          Icons.edit_outlined,
+                          color: Color(0xff60766f),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(13),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    const Text(
+                      "Deadline",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff304b46),
+                      ),
+                    ),
+
+                    const SizedBox(height: 9),
+
+                    InkWell(
+                      borderRadius: BorderRadius.circular(13),
+                      onTap: () async {
+                        final pickedDate = await showDatePicker(
+                          context: modalContext,
+                          initialDate: selectedDate ?? DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100),
+                          builder: (context, child) {
+                            return Theme(
+                              data: Theme.of(context).copyWith(
+                                colorScheme: const ColorScheme.light(
+                                  primary: Color(0xff304b46),
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          },
+                        );
+
+                        if (pickedDate != null && modalContext.mounted) {
+                          setModalState(() {
+                            selectedDate = pickedDate;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 15,
+                          vertical: 17,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xfff2f6f3),
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_month,
+                              color: Color(0xff304b46),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                selectedDate == null
+                                    ? "Pilih tanggal deadline"
+                                    : DateFormat(
+                                        'dd MMMM yyyy',
+                                      ).format(selectedDate!),
+                                style: TextStyle(
+                                  color: selectedDate == null
+                                      ? Colors.grey
+                                      : const Color(0xff304b46),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              color: Color(0xff304b46),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    const Text(
+                      "Description",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff304b46),
+                      ),
+                    ),
+
+                    const SizedBox(height: 9),
+
+                    TextField(
+                      onChanged: (value) {
+                        taskDescription = value;
+                      },
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: "Tuliskan deskripsi tugas...",
+                        alignLabelWithHint: true,
+                        filled: true,
+                        fillColor: const Color(0xfff2f6f3),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(13),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 53,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff304b46),
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () async {
+                          if (taskTitle.trim().isEmpty) {
+                            ScaffoldMessenger.of(modalContext).showSnackBar(
+                              const SnackBar(
+                                content: Text("Nama tugas harus diisi!"),
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (selectedDate == null) {
+                            ScaffoldMessenger.of(modalContext).showSnackBar(
+                              const SnackBar(
+                                content: Text("Silakan pilih deadline!"),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final formattedDate = DateFormat(
+                            'dd MMMM yyyy',
+                          ).format(selectedDate!);
+
+                          await Provider.of<TaskProvider>(
+                            modalContext,
+                            listen: false,
+                          ).addTask({
+                            "title": taskTitle.trim(),
+                            "desc": taskDescription.trim(),
+                            "time": "Deadline: $formattedDate",
+                          });
+
+                          if (sheetContext.mounted) {
+                            Navigator.pop(sheetContext);
+                          }
+                        },
+                        child: const Text(
+                          "Create Task",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
-              TextField(
-                controller: timeC,
-                decoration: const InputDecoration(labelText: "Deadline"),
-              ),
-              const SizedBox(height: 15),
-              ElevatedButton(
-                onPressed: () {
-                  Provider.of<TaskProvider>(context, listen: false).addTask({
-                    "title": titleC.text,
-                    "desc": descC.text,
-                    "time": "Deadline: ${timeC.text}",
-                  });
-                  Navigator.pop(context);
-                },
-                child: const Text("Save Task"),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -620,6 +870,8 @@ class _HomePageState extends State<HomePage> {
     required String time,
     required int index,
   }) {
+    final isCompleted = _tabIndex == 2;
+
     return Container(
       padding: const EdgeInsets.all(15),
       margin: const EdgeInsets.only(bottom: 12),
@@ -629,47 +881,71 @@ class _HomePageState extends State<HomePage> {
       ),
       child: Row(
         children: [
+          // Tombol menyelesaikan tugas
           GestureDetector(
             onTap: () {
-              Provider.of<TaskProvider>(
-                context,
-                listen: false,
-              ).completeTask(index);
+              if (!isCompleted) {
+                Provider.of<TaskProvider>(
+                  context,
+                  listen: false,
+                ).completeTask(index);
+              }
             },
             child: Container(
               width: 26,
               height: 26,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _tabIndex == 2
+                color: isCompleted
                     ? const Color(0xff304b46)
                     : Colors.transparent,
                 border: Border.all(color: const Color(0xff304b46), width: 2),
               ),
-              child: _tabIndex == 2
+              child: isCompleted
                   ? const Icon(Icons.check, size: 16, color: Colors.white)
                   : const SizedBox(),
             ),
           ),
+
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+
+          // Informasi tugas
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isCompleted ? Colors.grey : const Color(0xff304b46),
+                    decoration: isCompleted
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(desc, style: const TextStyle(color: Colors.grey)),
-              const SizedBox(height: 3),
-              Text(time, style: const TextStyle(color: Colors.grey)),
-            ],
+
+                const SizedBox(height: 4),
+
+                Text(
+                  desc,
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  time,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
+            ),
           ),
-          const Spacer(),
-          const Icon(Icons.more_vert),
+
+          const SizedBox(width: 8),
+
+          const Icon(Icons.more_vert, color: Colors.grey),
         ],
       ),
     );

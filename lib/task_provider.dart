@@ -44,18 +44,33 @@ class TaskProvider extends ChangeNotifier {
   }
 
   Future<void> fetchTasksFromApi() async {
-    final prefs = await SharedPreferences.getInstance();
-    final existing = prefs.getString('inProgressTasks');
-
-    if (existing != null) {
-      await loadFromLocal();
-      return;
-    }
-
     isLoading = true;
     notifyListeners();
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final existingInProgress = prefs.getString('inProgressTasks');
+      final existingCompleted = prefs.getString('completedTasks');
+
+      debugPrint('=== CEK DATA SAAT APLIKASI DIBUKA ===');
+      debugPrint('DATA IN PROGRESS: $existingInProgress');
+      debugPrint('DATA COMPLETED: $existingCompleted');
+
+      if (existingInProgress != null || existingCompleted != null) {
+        await loadFromLocal();
+
+        debugPrint('JUMLAH TUGAS AKTIF: ${_inProgressTasks.length}');
+        debugPrint('JUMLAH TUGAS SELESAI: ${_completedTasks.length}');
+
+        isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      // Lanjutkan kode API kamu yang sebelumnya
+
+      // Jika belum ada data lokal, ambil data awal dari API.
       final response = await http.get(
         Uri.parse('https://jsonplaceholder.typicode.com/todos?_limit=5'),
         headers: {'Content-Type': 'application/json'},
@@ -122,19 +137,41 @@ class TaskProvider extends ChangeNotifier {
 
         await _saveToLocal();
       } else {
-        print('Gagal fetch API: ${response.statusCode}');
+        debugPrint('Gagal fetch API: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error koneksi ke API: $e');
+      debugPrint('Error mengambil tugas: $e');
     }
 
     isLoading = false;
     notifyListeners();
   }
 
+  // Fungsi pencarian tugas
+  List<Map<String, String>> searchTasks(String query) {
+    if (query.trim().isEmpty) {
+      return [];
+    }
+
+    final keyword = query.toLowerCase().trim();
+
+    return allTasks.where((task) {
+      final title = task['title']?.toLowerCase() ?? '';
+      final desc = task['desc']?.toLowerCase() ?? '';
+
+      return title.contains(keyword) || desc.contains(keyword);
+    }).toList();
+  }
+
   Future<void> addTask(Map<String, String> task) async {
     _inProgressTasks.add(task);
+
     await _saveToLocal();
+
+    final prefs = await SharedPreferences.getInstance();
+
+    debugPrint('DATA TERSIMPAN: ${prefs.getString('inProgressTasks')}');
+
     notifyListeners();
   }
 

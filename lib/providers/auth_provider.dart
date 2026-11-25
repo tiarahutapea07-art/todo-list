@@ -237,7 +237,7 @@ class AuthProvider extends ChangeNotifier {
         email: 'alex.johnson@taskflow.dev',
         phone: '+62 812-3456-7890',
         bio: 'Mobile App Developer & Tech Enthusiast',
-        avatarUrl: 'https://i.pravatar.cc/150?img=12',
+        avatarUrl: 'avatar:dimas',
       );
       await _saveUserSession(_user!);
     }

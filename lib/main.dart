@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/CalendarPage.dart';
 import 'package:flutter_application_1/profile_page.dart';
 import 'package:flutter_application_1/tas_list_page.dart';
-import 'package:flutter_application_1/task_detail_page.dart';
 import 'package:flutter_application_1/register_page.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_1/task_provider.dart';
@@ -10,8 +9,7 @@ import 'providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'package:flutter_application_1/search_page.dart';
-import 'utils/avatar_helper.dart';
+import 'home_tab.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -513,7 +511,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _tabIndex = 0;
   int _navIndex = 0;
   late final PageController _pageController;
 
@@ -544,267 +541,6 @@ class _HomePageState extends State<HomePage> {
       index,
       duration: const Duration(milliseconds: 320),
       curve: Curves.easeInOutCubic,
-    );
-  }
-
-  Widget _buildHomeView() {
-    final taskProvider = Provider.of<TaskProvider>(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final bgColor = isDark ? const Color(0xff121212) : const Color(0xffe3ece7);
-    final headerBg = isDark ? const Color(0xff1c2824) : const Color(0xff304b46);
-    final primaryColor = isDark ? const Color(0xff4a7c6f) : const Color(0xff304b46);
-
-    if (taskProvider.isLoading) {
-      return Scaffold(
-        backgroundColor: bgColor,
-        body: Center(
-          child: CircularProgressIndicator(color: primaryColor),
-        ),
-      );
-    }
-
-    final currentList = _tabIndex == 0
-        ? taskProvider.allTasks
-        : (_tabIndex == 1
-            ? taskProvider.inProgressTasks
-            : taskProvider.completedTasks);
-
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(23, 53, 23, 28),
-                  decoration: BoxDecoration(
-                    color: headerBg,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(35),
-                      bottomRight: Radius.circular(35),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Spacer(),
-                          // Tombol Search
-                          IconButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SearchPage(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.search,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Tombol Notification
-                          IconButton(
-                            onPressed: _showNotificationDialog,
-                            icon: const Icon(
-                              Icons.notifications_none,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 9),
-                      Consumer<AuthProvider>(
-                        builder: (context, auth, _) {
-                          return Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 30,
-                                backgroundColor: Colors.white24,
-                                child: CircleAvatar(
-                                  radius: 28,
-                                  backgroundImage: getAvatarImage(auth.user?.avatarUrl),
-                                ),
-                              ),
-                              const SizedBox(width: 15),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Selamat Datang,",
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  Text(
-                                    auth.user?.name ?? 'Pengguna',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 25),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => _onTabTapped(0),
-                            child: _tabItem(
-                              "Semua (${taskProvider.allTasks.length})",
-                              isSelected: _tabIndex == 0,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => _onTabTapped(1),
-                            child: _tabItem(
-                              "Berjalan (${taskProvider.inProgressTasks.length})",
-                              isSelected: _tabIndex == 1,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => _onTabTapped(2),
-                            child: _tabItem(
-                              "Selesai (${taskProvider.completedTasks.length})",
-                              isSelected: _tabIndex == 2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _topSummaryCard(
-                              title: "Tugas Aktif",
-                              value: "${taskProvider.inProgressTasks.length}",
-                              sub: "Sedang dikerjakan",
-                              isDark: isDark,
-                              iconColor: Colors.orange.shade500,
-                            ),
-                          ),
-                          const SizedBox(width: 15),
-                          Expanded(
-                            child: _topSummaryCard(
-                              title: "Tuntas",
-                              value: "${taskProvider.completedTasks.length}",
-                              sub: "Berhasil diselesaikan",
-                              isDark: isDark,
-                              iconColor: Colors.green.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 18, 22, 10),
-                  child: Row(
-                    children: [
-                      Text(
-                        _tabIndex == 0
-                            ? "Semua Tugas"
-                            : (_tabIndex == 1 ? "Tugas Berjalan" : "Tugas Selesai"),
-                        style: TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xff304b46),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        "${currentList.length} item",
-                        style: TextStyle(
-                          color: isDark ? Colors.white60 : Colors.grey,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
-                sliver: currentList.isEmpty
-                    ? SliverToBoxAdapter(
-                        child: Container(
-                          padding: const EdgeInsets.all(40),
-                          alignment: Alignment.center,
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.task_outlined,
-                                size: 48,
-                                color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                "Tidak ada tugas dalam kategori ini",
-                                style: TextStyle(
-                                  color: isDark ? Colors.white60 : Colors.grey,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final task = currentList[index];
-                            return _taskRow(
-                              task: task,
-                              title: task["title"] ?? '',
-                              desc: task["desc"] ?? '',
-                              time: task["time"] ?? '',
-                              index: index,
-                              isDark: isDark,
-                            );
-                          },
-                          childCount: currentList.length,
-                        ),
-                      ),
-              ),
-            ],
-          ),
-          Positioned(
-            right: 20,
-            bottom: 20,
-            child: FloatingActionButton(
-              backgroundColor: primaryColor,
-              onPressed: _addTaskModal,
-              child: const Icon(Icons.add, size: 30, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -850,12 +586,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _onTabTapped(int index) {
-    setState(() {
-      _tabIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -870,8 +600,8 @@ class _HomePageState extends State<HomePage> {
           });
         },
         children: [
-          _buildHomeView(),
-          const CalendarPage(),
+          HomeTab(onNotification: _showNotificationDialog),
+          CalendarPage(onNotification: _showNotificationDialog),
           const TaskListPage(),
           ProfilePage(
             toggleTheme: widget.toggleTheme,
@@ -883,24 +613,78 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      // Tombol tambah di tengah, menempel pada bottom bar
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addTaskModal,
+        backgroundColor: isDark ? const Color(0xff4a7c6f) : const Color(0xff1f4d40),
+        elevation: 6,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, size: 32, color: Colors.white),
+      ),
       // Bottom navigation bar tetap ada dan tidak menghilang
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _navIndex,
-        onTap: _onBottomNavTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: 'Calendar',
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8,
+        height: 68,
+        padding: EdgeInsets.zero,
+        color: isDark ? const Color(0xff1c1c1c) : Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 12,
+        shadowColor: Colors.black54,
+        child: Row(
+          children: [
+            Expanded(child: _navItem(0, Icons.home_rounded, 'Home', isDark)),
+            Expanded(child: _navItem(1, Icons.calendar_month_rounded, 'Calendar', isDark)),
+            const SizedBox(width: 76),
+            Expanded(child: _navItem(2, Icons.list_alt_rounded, 'Tasks', isDark)),
+            Expanded(child: _navItem(3, Icons.person_rounded, 'Profile', isDark)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _navItem(int index, IconData icon, String label, bool isDark) {
+    final selected = _navIndex == index;
+    final activeColor = isDark ? const Color(0xff80cbc4) : const Color(0xff1f4d40);
+    final inactiveColor = isDark ? Colors.white38 : const Color(0xffa3aca8);
+
+    return InkWell(
+      onTap: () => _onBottomNavTapped(index),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.topCenter,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeInOut,
+              height: 3,
+              width: selected ? 44 : 0,
+              decoration: BoxDecoration(
+                color: activeColor,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Tasks'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 26, color: selected ? activeColor : inactiveColor),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? activeColor : inactiveColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
-        selectedItemColor: isDark ? const Color(0xff80cbc4) : const Color(0xff304b46),
-        unselectedItemColor: isDark ? Colors.white38 : Colors.grey,
-        backgroundColor: isDark ? const Color(0xff1c1c1c) : Colors.white,
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
       ),
     );
   }
@@ -1156,195 +940,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _tabItem(String text, {bool isSelected = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.white : Colors.white12,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: isSelected ? const Color(0xff304b46) : Colors.white70,
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
-        ),
-      ),
-    );
-  }
-
-  Widget _topSummaryCard({
-    required String title,
-    required String value,
-    required String sub,
-    required bool isDark,
-    required Color iconColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xff1e1e1e) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-              Icon(Icons.trending_up, size: 18, color: iconColor),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: iconColor,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            sub,
-            style: TextStyle(
-              color: isDark ? Colors.white60 : Colors.grey,
-              fontSize: 11,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _taskRow({
-    required Map<String, String> task,
-    required String title,
-    required String desc,
-    required String time,
-    required int index,
-    required bool isDark,
-  }) {
-    final isCompleted = task['time'] == 'Selesai';
-    final cardBg = isDark ? const Color(0xff1e1e1e) : Colors.white;
-    final primaryColor = isDark ? const Color(0xff80cbc4) : const Color(0xff304b46);
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TaskDetailPage(task: task),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Tombol menyelesaikan tugas
-            GestureDetector(
-              onTap: () {
-                Provider.of<TaskProvider>(
-                  context,
-                  listen: false,
-                ).toggleTaskStatus(task);
-              },
-              child: Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isCompleted ? primaryColor : Colors.transparent,
-                  border: Border.all(color: primaryColor, width: 2),
-                ),
-                child: isCompleted
-                    ? const Icon(Icons.check, size: 16, color: Colors.white)
-                    : const SizedBox(),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Informasi tugas
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isCompleted
-                          ? Colors.grey
-                          : (isDark ? Colors.white : const Color(0xff304b46)),
-                      decoration: isCompleted
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    desc,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: isDark ? Colors.white60 : Colors.grey,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      color: isCompleted
-                          ? Colors.green
-                          : (isDark ? const Color(0xff80cbc4) : Colors.grey),
-                      fontSize: 12,
-                      fontWeight: isCompleted ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: isDark ? Colors.white38 : Colors.grey,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

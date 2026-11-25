@@ -1,10 +1,32 @@
-import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'utils/avatar_helper.dart';
+
+/// Clipper kubah melengkung ke atas seperti desain Edit Profil.
+class _ArchHeaderClipper extends CustomClipper<Path> {
+  final double peakY;
+  const _ArchHeaderClipper({required this.peakY});
+
+  @override
+  Path getClip(Size size) {
+    final sideY = size.height;
+    final controlY = 2 * peakY - sideY;
+    final path = Path()
+      ..lineTo(0, sideY)
+      ..quadraticBezierTo(size.width / 2, controlY, size.width, sideY)
+      ..lineTo(size.width, 0)
+      ..close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant _ArchHeaderClipper oldClipper) =>
+      oldClipper.peakY != peakY;
+}
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -21,33 +43,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late String _selectedAvatar;
   final ImagePicker _picker = ImagePicker();
 
-  final Map<String, List<Map<String, String>>> _categorizedAvatars = {
-    'Laki-laki Muda': [
-      {'name': 'Alex', 'url': 'https://i.pravatar.cc/150?img=11'},
-      {'name': 'Dimas', 'url': 'https://i.pravatar.cc/150?img=12'},
-      {'name': 'Rian', 'url': 'https://i.pravatar.cc/150?img=33'},
-      {'name': 'Kevin', 'url': 'https://i.pravatar.cc/150?img=15'},
-    ],
-    'Wanita Muda': [
-      {'name': 'Siti', 'url': 'https://i.pravatar.cc/150?img=5'},
-      {'name': 'Maya', 'url': 'https://i.pravatar.cc/150?img=9'},
-      {'name': 'Nadia', 'url': 'https://i.pravatar.cc/150?img=47'},
-      {'name': 'Clara', 'url': 'https://i.pravatar.cc/150?img=49'},
-    ],
-    'Laki-laki Dewasa / Tua': [
-      {'name': 'Pak Budi', 'url': 'https://i.pravatar.cc/150?img=52'},
-      {'name': 'Pak Hendra', 'url': 'https://i.pravatar.cc/150?img=59'},
-      {'name': 'Kakek Robert', 'url': 'https://i.pravatar.cc/150?img=60'},
-      {'name': 'Pak Surya', 'url': 'https://i.pravatar.cc/150?img=68'},
-    ],
-    'Wanita Dewasa / Tua': [
-      {'name': 'Ibu Ani', 'url': 'https://i.pravatar.cc/150?img=23'},
-      {'name': 'Ibu Dewi', 'url': 'https://i.pravatar.cc/150?img=24'},
-      {'name': 'Nenek Sarah', 'url': 'https://i.pravatar.cc/150?img=26'},
-      {'name': 'Ibu Rina', 'url': 'https://i.pravatar.cc/150?img=32'},
-    ],
-  };
-
   @override
   void initState() {
     super.initState();
@@ -56,9 +51,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController = TextEditingController(text: user?.email ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
     _bioController = TextEditingController(text: user?.bio ?? '');
-    _selectedAvatar = user?.avatarUrl.isNotEmpty == true
-        ? user!.avatarUrl
-        : 'https://i.pravatar.cc/150?img=33';
+    _selectedAvatar = normalizeAvatarId(user?.avatarUrl);
   }
 
   @override
@@ -89,7 +82,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Foto kamera berhasil diambil!'),
-              backgroundColor: Color(0xff304b46),
+              backgroundColor: Color(0xff1f4d40),
               duration: Duration(seconds: 2),
             ),
           );
@@ -125,7 +118,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Foto dari galeri dipilih!'),
-              backgroundColor: Color(0xff304b46),
+              backgroundColor: Color(0xff1f4d40),
               duration: Duration(seconds: 2),
             ),
           );
@@ -144,37 +137,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   void _randomizeAvatar() {
-    final allAvatars = <String>[];
-    _categorizedAvatars.forEach((category, list) {
-      for (final item in list) {
-        allAvatars.add(item['url']!);
-      }
+    final candidates = kDiverseAvatarPresets
+        .where((item) => item['id'] != _selectedAvatar)
+        .toList();
+    if (candidates.isEmpty) return;
+
+    final random = Random();
+    final picked = candidates[random.nextInt(candidates.length)];
+    setState(() {
+      _selectedAvatar = picked['id']!;
     });
 
-    if (allAvatars.isNotEmpty) {
-      final random = Random();
-      final randomUrl = allAvatars[random.nextInt(allAvatars.length)];
-      setState(() {
-        _selectedAvatar = randomUrl;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Avatar acak berhasil dipilih!'),
-          backgroundColor: Color(0xff304b46),
-          duration: Duration(milliseconds: 1500),
-        ),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Avatar acak terpilih: ${picked['name']} (${picked['group']})'),
+        backgroundColor: const Color(0xff1f4d40),
+        duration: const Duration(milliseconds: 1400),
+      ),
+    );
   }
 
-  void _showImageSourceOptions() {
+  void _showPhotoPickerOptions() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xff1e1e1e) : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (ctx) {
         return SafeArea(
@@ -184,7 +173,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 40,
+                  width: 42,
                   height: 4,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade400,
@@ -193,32 +182,36 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Ubah Foto Profil',
+                  'Masukkan Foto Profil',
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : const Color(0xff304b46),
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : const Color(0xff1f4d40),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   leading: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xff304b46).withOpacity(0.12),
+                      color: const Color(0xff1f4d40).withValues(alpha: 0.14),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.camera_alt, color: Color(0xff304b46)),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      color: isDark ? const Color(0xff80cbc4) : const Color(0xff1f4d40),
+                    ),
                   ),
                   title: Text(
                     'Ambil Foto Langsung (Kamera)',
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   subtitle: Text(
-                    'Buka kamera dan ambil foto sekarang',
+                    'Buka kamera untuk foto profil secara langsung',
                     style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
                   ),
                   onTap: () {
@@ -227,53 +220,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   },
                 ),
                 ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   leading: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.12),
+                      color: Colors.blue.withValues(alpha: 0.14),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.photo_library, color: Colors.blue),
+                    child: const Icon(Icons.photo_library_rounded, color: Colors.blue),
                   ),
                   title: Text(
                     'Pilih dari Galeri',
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   subtitle: Text(
-                    'Pilih foto dari penyimpanan galeri perangkat',
+                    'Pilih gambar dari penyimpanan perangkat',
                     style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickFromGallery();
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.shuffle, color: Colors.orange),
-                  ),
-                  title: Text(
-                    'Acak Avatar (Random)',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Pilih avatar secara acak dari berbagai kalangan',
-                    style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _randomizeAvatar();
                   },
                 ),
               ],
@@ -308,7 +277,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Profil berhasil diperbarui!'),
-          backgroundColor: Color(0xff304b46),
+          backgroundColor: Color(0xff1f4d40),
         ),
       );
       Navigator.pop(context);
@@ -320,344 +289,432 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final auth = context.watch<AuthProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xff121212) : const Color(0xffe3ece7);
+    final bgColor = isDark ? const Color(0xff121212) : const Color(0xffeef3f0);
     final cardColor = isDark ? const Color(0xff1e1e1e) : Colors.white;
-    final primaryColor = isDark ? const Color(0xff4a7c6f) : const Color(0xff304b46);
-    final textColor = isDark ? Colors.white : const Color(0xff304b46);
-    final bodyTextColor = isDark ? Colors.white70 : Colors.black87;
+    final headerColor = isDark ? const Color(0xff16342d) : const Color(0xff21483e);
+    final primaryColor = isDark ? const Color(0xff4a7c6f) : const Color(0xff23483e);
+    final textColor = isDark ? Colors.white : const Color(0xff111815);
+    final topInset = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        title: const Text('Edit Profil', style: TextStyle(fontWeight: FontWeight.bold)),
-        elevation: 0,
+    final archPeakY = topInset + 68;
+    final headerSideHeight = topInset + 186;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Avatar Preview with interactive camera button
-            Center(
-              child: Stack(
+      child: Scaffold(
+        backgroundColor: bgColor,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 36),
+          child: Column(
+            children: [
+              // ===== Header Melengkung Kubah + Avatar Besar =====
+              Stack(
                 children: [
-                  GestureDetector(
-                    onTap: _showImageSourceOptions,
+                  ClipPath(
+                    clipper: _ArchHeaderClipper(peakY: archPeakY),
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      width: double.infinity,
+                      height: headerSideHeight,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: primaryColor, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 54,
-                        backgroundColor: isDark ? const Color(0xff2a2a2a) : const Color(0xffe3ece7),
-                        backgroundImage: getAvatarImage(_selectedAvatar),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDark
+                              ? [const Color(0xff142d27), const Color(0xff1d3f37)]
+                              : [const Color(0xff1c3d34), const Color(0xff275448)],
+                        ),
                       ),
                     ),
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: _takePhotoDirectly,
-                      child: Container(
-                        padding: const EdgeInsets.all(9),
-                        decoration: BoxDecoration(
-                          color: primaryColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: cardColor, width: 2),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
+
+                  // AppBar Transparan (Back + Judul Edit Profil)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(8, topInset + 6, 16, 0),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 25),
+                          onPressed: () => Navigator.pop(context),
                         ),
-                        child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Edit Profil',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 23,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Lingkaran Avatar Pratinjau Besar
+                  Padding(
+                    padding: EdgeInsets.only(top: archPeakY + 26),
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: _showPhotoPickerOptions,
+                        child: Container(
+                          padding: const EdgeInsets.all(4.5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: cardColor,
+                            border: Border.all(
+                              color: isDark ? const Color(0xff5fa392) : const Color(0xff25493f),
+                              width: 3.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                                blurRadius: 14,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: buildUserAvatar(
+                            avatarUrl: _selectedAvatar,
+                            radius: 82,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 12),
 
-            // Camera & Random buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _takePhotoDirectly,
-                  icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                  label: const Text('Foto Langsung'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+              const SizedBox(height: 22),
+
+              // ===== Tombol Masukkan Foto & Acak Avatar =====
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _showPhotoPickerOptions,
+                      icon: const Icon(Icons.add_photo_alternate_outlined, size: 21),
+                      label: const Text(
+                        'Masukkan Foto',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        elevation: 3,
+                        shadowColor: Colors.black38,
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
                     ),
+                    const SizedBox(width: 12),
+                    OutlinedButton.icon(
+                      onPressed: _randomizeAvatar,
+                      icon: Icon(
+                        Icons.shuffle_rounded,
+                        size: 20,
+                        color: isDark ? Colors.white : const Color(0xff1e3d34),
+                      ),
+                      label: Text(
+                        'Acak Avatar',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : const Color(0xff1e3d34),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: isDark ? const Color(0xff1e1e1e) : const Color(0xfff4f7f5),
+                        side: BorderSide(
+                          color: isDark ? const Color(0xff5fa392) : const Color(0xff25493f),
+                          width: 1.4,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              // ===== Kartu Pilihan Avatar Beragam (Grid 2x3) =====
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Pilihan Avatar Beragam',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: textColor,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'Laki / Wanita / Usia',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              color: isDark ? Colors.white60 : const Color(0xff77827d),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Baris 1: Dimas, Siti, Budi
+                      Row(
+                        children: kDiverseAvatarPresets
+                            .sublist(0, 3)
+                            .map((item) => Expanded(child: _buildAvatarGridItem(item, isDark)))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Baris 2: Maya, Hendra, Sri
+                      Row(
+                        children: kDiverseAvatarPresets
+                            .sublist(3, 6)
+                            .map((item) => Expanded(child: _buildAvatarGridItem(item, isDark)))
+                            .toList(),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  onPressed: _randomizeAvatar,
-                  icon: const Icon(Icons.shuffle, size: 18),
-                  label: const Text('Acak Avatar'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: primaryColor,
-                    side: BorderSide(color: primaryColor, width: 1.5),
-                    backgroundColor: isDark ? const Color(0xff1e1e1e) : Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ===== Kartu Form Input Data Profil =====
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(26),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildProfileField(
+                        label: 'Nama Lengkap',
+                        controller: _nameController,
+                        icon: Icons.person,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildProfileField(
+                        label: 'Email',
+                        controller: _emailController,
+                        icon: Icons.email,
+                        keyboardType: TextInputType.emailAddress,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildProfileField(
+                        label: 'Nomor Telepon',
+                        controller: _phoneController,
+                        icon: Icons.phone,
+                        keyboardType: TextInputType.phone,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildProfileField(
+                        label: 'Bio / Status',
+                        controller: _bioController,
+                        icon: Icons.info_outline_rounded,
+                        maxLines: 4,
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ===== Tombol Simpan Perubahan =====
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: auth.isLoading ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: headerColor,
+                      foregroundColor: Colors.white,
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: auth.isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Simpan Perubahan',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarGridItem(Map<String, String> item, bool isDark) {
+    final id = item['id']!;
+    final name = item['name']!;
+    final isSelected = _selectedAvatar == id;
+    final ringColor = isDark ? const Color(0xff80cbc4) : const Color(0xff25493f);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedAvatar = id;
+        });
+      },
+      child: Column(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(3.5),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected ? ringColor : Colors.transparent,
+                width: 2.8,
+              ),
+            ),
+            child: buildUserAvatar(
+              avatarUrl: id,
+              radius: 44,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 15.5,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              color: isDark ? Colors.white : const Color(0xff111815),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    required bool isDark,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    final fieldBg = isDark ? const Color(0xff292f2c) : const Color(0xffeaf0ec);
+    final labelColor = isDark ? const Color(0xff9cc7bc) : const Color(0xff2d4a42);
+    final iconColor = isDark ? const Color(0xff80cbc4) : const Color(0xff23483e);
+    final textColor = isDark ? Colors.white : const Color(0xff111815);
+    final isMultiline = maxLines > 1;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: isMultiline ? 12 : 4,
+            ),
+            decoration: BoxDecoration(
+              color: fieldBg,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              crossAxisAlignment:
+                  isMultiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(top: isMultiline ? 6 : 0, right: 12),
+                  child: Icon(icon, color: iconColor, size: 26),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    keyboardType: keyboardType,
+                    maxLines: maxLines,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w500,
+                      color: textColor,
+                      height: 1.35,
+                    ),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isDense: false,
+                      contentPadding: EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-
-            // Categorized Avatar Selection
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Pilihan Avatar Beragam',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                      ),
-                      Text(
-                        'Laki / Wanita / Usia',
-                        style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.grey),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Display all categories
-                  ..._categorizedAvatars.entries.map((entry) {
-                    final categoryTitle = entry.key;
-                    final avatars = entry.value;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            categoryTitle,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? const Color(0xff80cbc4) : const Color(0xff304b46),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: avatars.map((item) {
-                                final isSelected = _selectedAvatar == item['url'];
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedAvatar = item['url']!;
-                                    });
-                                  },
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 12),
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(3),
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: isSelected ? primaryColor : Colors.transparent,
-                                              width: 3,
-                                            ),
-                                          ),
-                                          child: CircleAvatar(
-                                            radius: 26,
-                                            backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                                            backgroundImage: NetworkImage(item['url']!),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          item['name'] ?? '',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: isSelected
-                                                ? (isDark ? const Color(0xff80cbc4) : primaryColor)
-                                                : (isDark ? Colors.white60 : Colors.black54),
-                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Form inputs
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    style: TextStyle(color: bodyTextColor),
-                    decoration: InputDecoration(
-                      labelText: 'Nama Lengkap',
-                      labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade700),
-                      prefixIcon: Icon(Icons.person, color: primaryColor),
-                      filled: true,
-                      fillColor: isDark ? const Color(0xff292929) : const Color(0xfff5f8f6),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: TextStyle(color: bodyTextColor),
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade700),
-                      prefixIcon: Icon(Icons.email, color: primaryColor),
-                      filled: true,
-                      fillColor: isDark ? const Color(0xff292929) : const Color(0xfff5f8f6),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    style: TextStyle(color: bodyTextColor),
-                    decoration: InputDecoration(
-                      labelText: 'Nomor Telepon',
-                      hintText: '+62 812-xxxx-xxxx',
-                      hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
-                      labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade700),
-                      prefixIcon: Icon(Icons.phone, color: primaryColor),
-                      filled: true,
-                      fillColor: isDark ? const Color(0xff292929) : const Color(0xfff5f8f6),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _bioController,
-                    maxLines: 2,
-                    style: TextStyle(color: bodyTextColor),
-                    decoration: InputDecoration(
-                      labelText: 'Bio / Status',
-                      labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.grey.shade700),
-                      prefixIcon: Icon(Icons.info_outline, color: primaryColor),
-                      filled: true,
-                      fillColor: isDark ? const Color(0xff292929) : const Color(0xfff5f8f6),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // Save button
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: auth.isLoading ? null : _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: auth.isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Simpan Perubahan',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        Positioned(
+          left: 16,
+          top: 0,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w500,
+              color: labelColor,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

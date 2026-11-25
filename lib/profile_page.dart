@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'task_provider.dart';
 import 'edit_profile_page.dart';
 import 'utils/avatar_helper.dart';
+
+class _ProfileBackdropClipper extends CustomClipper<Path> {
+  final double edgeY;
+  const _ProfileBackdropClipper({required this.edgeY});
+
+  @override
+  Path getClip(Size size) {
+    final path = Path()
+      ..lineTo(0, edgeY)
+      ..quadraticBezierTo(
+        size.width / 2,
+        2 * size.height - edgeY,
+        size.width,
+        edgeY,
+      )
+      ..lineTo(size.width, 0)
+      ..close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant _ProfileBackdropClipper oldClipper) =>
+      oldClipper.edgeY != edgeY;
+}
 
 class ProfilePage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -22,7 +47,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // Widget Switch Animasi Halus: bulatan bergeser ke kanan (Dark) & ke kiri (Light)
+  // Switch animasi halus: bulatan bergeser ke kanan (Dark) & ke kiri (Light)
   Widget _buildSlidingSwitch({
     required bool isDark,
     required VoidCallback onToggle,
@@ -33,15 +58,15 @@ class _ProfilePageState extends State<ProfilePage> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        width: 66,
-        height: 36,
+        width: 70,
+        height: 38,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          color: isDark ? const Color(0xff4a7c6f) : const Color(0xffc2d1cb),
+          color: isDark ? const Color(0xff4a7c6f) : const Color(0xffbac7c0),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.12),
+              color: Colors.black.withOpacity(0.10),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -52,14 +77,14 @@ class _ProfilePageState extends State<ProfilePage> {
           curve: Curves.easeInOutCubic,
           alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            width: 28,
-            height: 28,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withOpacity(0.18),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -67,8 +92,8 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             child: Icon(
               isDark ? Icons.nightlight_round : Icons.wb_sunny_rounded,
-              size: 16,
-              color: isDark ? const Color(0xff304b46) : Colors.amber.shade800,
+              size: 17,
+              color: isDark ? const Color(0xff1f4d40) : Colors.amber.shade700,
             ),
           ),
         ),
@@ -86,7 +111,7 @@ class _ProfilePageState extends State<ProfilePage> {
           builder: (modalCtx, setModalState) {
             final isDark = Theme.of(context).brightness == Brightness.dark;
             final cardBg = isDark ? const Color(0xff1e1e1e) : Colors.white;
-            final textColor = isDark ? Colors.white : const Color(0xff304b46);
+            final textColor = isDark ? Colors.white : const Color(0xff1f4d40);
             final subTextColor = isDark ? Colors.white70 : Colors.black87;
 
             return Container(
@@ -122,12 +147,13 @@ class _ProfilePageState extends State<ProfilePage> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: (isDark ? const Color(0xff4a7c6f) : const Color(0xff304b46)).withOpacity(0.15),
+                          color: (isDark ? const Color(0xff4a7c6f) : const Color(0xff1f4d40))
+                              .withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           Icons.settings,
-                          color: isDark ? const Color(0xff80cbc4) : const Color(0xff304b46),
+                          color: isDark ? const Color(0xff80cbc4) : const Color(0xff1f4d40),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -142,8 +168,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                   const SizedBox(height: 20),
-
-                  // Mode Gelap Toggle Card
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -192,14 +216,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 6),
                     leading: Icon(
                       Icons.notifications_active_outlined,
-                      color: isDark ? const Color(0xff80cbc4) : const Color(0xff304b46),
+                      color: isDark ? const Color(0xff80cbc4) : const Color(0xff1f4d40),
                     ),
                     title: Text(
                       'Notifikasi Pengingat',
@@ -214,15 +236,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     onTap: () {},
                   ),
-
                   const SizedBox(height: 14),
-
                   SizedBox(
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark ? const Color(0xff4a7c6f) : const Color(0xff304b46),
+                        backgroundColor:
+                            isDark ? const Color(0xff4a7c6f) : const Color(0xff1f4d40),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -253,13 +274,13 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Icon(
                 Icons.help_outline,
-                color: isDark ? const Color(0xff80cbc4) : const Color(0xff304b46),
+                color: isDark ? const Color(0xff80cbc4) : const Color(0xff1f4d40),
               ),
               const SizedBox(width: 10),
               Text(
                 'Bantuan & Dukungan',
                 style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xff304b46),
+                  color: isDark ? Colors.white : const Color(0xff1f4d40),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -305,7 +326,7 @@ class _ProfilePageState extends State<ProfilePage> {
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isDark ? const Color(0xff4a7c6f) : const Color(0xff304b46),
+                backgroundColor: isDark ? const Color(0xff4a7c6f) : const Color(0xff1f4d40),
                 foregroundColor: Colors.white,
               ),
               onPressed: () => Navigator.pop(dialogCtx),
@@ -379,263 +400,407 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = authProvider.user;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xff121212) : const Color(0xffe3ece7);
+    final bgColor = isDark ? const Color(0xff121212) : const Color(0xffeaf0ec);
+    final headerColor = isDark ? const Color(0xff16342d) : const Color(0xff1f4d40);
+    final primaryColor = isDark ? const Color(0xff4a7c6f) : const Color(0xff1f4d40);
     final cardColor = isDark ? const Color(0xff1e1e1e) : Colors.white;
-    final primaryColor = isDark ? const Color(0xff4a7c6f) : const Color(0xff304b46);
-    final textColor = isDark ? Colors.white : const Color(0xff304b46);
-    final subTextColor = isDark ? Colors.white70 : Colors.black54;
+    final textColor = isDark ? Colors.white : const Color(0xff111815);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xff525d58);
+    final topInset = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        title: const Text('Profil Pengguna', style: TextStyle(fontWeight: FontWeight.bold)),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Pengaturan',
-            onPressed: _showSettings,
-          ),
-        ],
+    final pinnedHeaderH = topInset + 86;
+    final cardStartTop = topInset + 92;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      child: Scaffold(
+        backgroundColor: bgColor,
+        body: Stack(
           children: [
-            // Avatar & Nama Card
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
+            // ===== Konten Scrollable dengan backdrop melengkung di atas =====
+            SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 115),
+              child: Stack(
                 children: [
-                  Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: primaryColor, width: 3),
+                  ClipPath(
+                    clipper: _ProfileBackdropClipper(edgeY: cardStartTop + 95),
+                    child: Container(
+                      width: double.infinity,
+                      height: cardStartTop + 150,
+                      color: headerColor,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(20, cardStartTop, 20, 0),
+                    child: Column(
+                      children: [
+                        // ===== Kartu Profil Utama =====
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
+                          decoration: BoxDecoration(
+                            color: cardColor,
+                            borderRadius: BorderRadius.circular(26),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Stack(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4.5),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isDark
+                                            ? const Color(0xff5ea391)
+                                            : const Color(0xff234b3f),
+                                        width: 3.5,
+                                      ),
+                                    ),
+                                    child: buildUserAvatar(
+                                      avatarUrl: user?.avatarUrl,
+                                      radius: 62,
+                                      backgroundColor: isDark
+                                          ? const Color(0xff2a3632)
+                                          : const Color(0xffe1ece7),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 2,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const EditProfilePage(),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: primaryColor,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: cardColor, width: 3),
+                                        ),
+                                        child: const Icon(
+                                          Icons.edit,
+                                          size: 19,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 18),
+                              Text(
+                                (user?.name != null && user!.name.isNotEmpty)
+                                    ? user.name
+                                    : 'User TaskFlow',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 27,
+                                  fontWeight: FontWeight.w800,
+                                  color: textColor,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                user?.email ?? '-',
+                                style: TextStyle(color: subTextColor, fontSize: 15.5),
+                              ),
+                              if (user?.phone != null && user!.phone.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  user.phone,
+                                  style: TextStyle(color: subTextColor, fontSize: 15.5),
+                                ),
+                              ],
+                              if (user?.bio != null && user!.bio.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 11,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0xff2a3632)
+                                        : const Color(0xffb8c6bf),
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  child: Text(
+                                    user.bio,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? const Color(0xffd7ebe4)
+                                          : const Color(0xff111815),
+                                      fontSize: 14.5,
+                                      fontStyle: FontStyle.italic,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                        child: CircleAvatar(
-                          radius: 46,
-                          backgroundColor: isDark ? const Color(0xff2a2a2a) : const Color(0xffe3ece7),
-                          backgroundImage: getAvatarImage(user?.avatarUrl),
+
+                        const SizedBox(height: 18),
+
+                        // ===== Kartu Tema Aplikasi =====
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+                          decoration: BoxDecoration(
+                            color: cardColor,
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xff263b34)
+                                      : const Color(0xffa8c3b4),
+                                  borderRadius: BorderRadius.circular(17),
+                                ),
+                                child: Icon(
+                                  isDark ? Icons.dark_mode_rounded : Icons.wb_sunny_outlined,
+                                  size: 27,
+                                  color: isDark
+                                      ? const Color(0xff80cbc4)
+                                      : const Color(0xff1d3830),
+                                ),
+                              ),
+                              const SizedBox(width: 15),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Tema Aplikasi',
+                                      style: TextStyle(
+                                        fontSize: 17.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      isDark ? 'Mode Gelap Aktif' : 'Mode Terang Aktif',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isDark
+                                            ? Colors.white60
+                                            : const Color(0xff6b7571),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _buildSlidingSwitch(
+                                isDark: isDark,
+                                onToggle: widget.toggleTheme,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
+
+                        const SizedBox(height: 18),
+
+                        // ===== 3 Kartu Statistik Berwarna Pastel =====
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _statCard(
+                                label: 'Total',
+                                value: '${taskProvider.allTasks.length}',
+                                icon: Icons.format_list_bulleted_rounded,
+                                bgColor: isDark
+                                    ? const Color(0xff1e2d33)
+                                    : const Color(0xffb8cfd6),
+                                accentColor: isDark
+                                    ? const Color(0xff8ecae6)
+                                    : const Color(0xff1c333a),
+                                labelColor: isDark
+                                    ? Colors.white70
+                                    : const Color(0xff2c4249),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _statCard(
+                                label: 'Berjalan',
+                                value: '${taskProvider.inProgressTasks.length}',
+                                icon: Icons.timelapse_rounded,
+                                bgColor: isDark
+                                    ? const Color(0xff332619)
+                                    : const Color(0xffffdfbd),
+                                accentColor: isDark
+                                    ? const Color(0xffffb74d)
+                                    : const Color(0xffe07b1a),
+                                labelColor: isDark
+                                    ? Colors.white70
+                                    : const Color(0xff5c4632),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _statCard(
+                                label: 'Selesai',
+                                value: '${taskProvider.completedTasks.length}',
+                                icon: Icons.check_circle_outline_rounded,
+                                bgColor: isDark
+                                    ? const Color(0xff1b3020)
+                                    : const Color(0xffd2f0d5),
+                                accentColor: isDark
+                                    ? const Color(0xff81c784)
+                                    : const Color(0xff338a3e),
+                                labelColor: isDark
+                                    ? Colors.white70
+                                    : const Color(0xff355439),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ===== Daftar Menu Opsi =====
+                        _profileOption(
+                          title: 'Edit Profil & Kamera',
+                          icon: Icons.edit_outlined,
+                          cardColor: cardColor,
+                          iconBoxBg: isDark
+                              ? const Color(0xff25323a)
+                              : const Color(0xffa8bac4),
+                          iconColor: isDark
+                              ? const Color(0xff90caf9)
+                              : const Color(0xff2c3e47),
+                          isDark: isDark,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const EditProfilePage()),
                             );
                           },
-                          child: Container(
-                            padding: const EdgeInsets.all(7),
-                            decoration: BoxDecoration(
-                              color: primaryColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: cardColor, width: 2),
-                            ),
-                            child: const Icon(Icons.edit, size: 16, color: Colors.white),
-                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    (user?.name != null && user!.name.isNotEmpty)
-                        ? user.name
-                        : 'User TaskFlow',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user?.email ?? '-',
-                    style: TextStyle(color: subTextColor, fontSize: 14),
-                  ),
-                  if (user?.phone != null && user!.phone.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      user.phone,
-                      style: TextStyle(color: subTextColor, fontSize: 13),
-                    ),
-                  ],
-                  if (user?.bio != null && user!.bio.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xff2a2a2a) : const Color(0xffe3ece7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        user.bio,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: isDark ? const Color(0xff80cbc4) : const Color(0xff304b46),
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
+                        _profileOption(
+                          title: 'Pengaturan & Tema',
+                          icon: Icons.settings_outlined,
+                          cardColor: cardColor,
+                          iconBoxBg: isDark
+                              ? const Color(0xff24362b)
+                              : const Color(0xffacc2b3),
+                          iconColor: isDark
+                              ? const Color(0xff80cbc4)
+                              : const Color(0xff2d4536),
+                          isDark: isDark,
+                          onTap: _showSettings,
                         ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            // Mode Gelap Quick Toggle Banner with smooth sliding switch
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              decoration: BoxDecoration(
-                color: cardColor,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.25 : 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xff2a2a2a) : const Color(0xffe3ece7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      isDark ? Icons.dark_mode : Icons.light_mode,
-                      color: isDark ? const Color(0xff80cbc4) : const Color(0xff304b46),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Tema Aplikasi',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
+                        _profileOption(
+                          title: 'Bantuan & Dukungan',
+                          icon: Icons.help_outline_rounded,
+                          cardColor: cardColor,
+                          iconBoxBg: isDark
+                              ? const Color(0xff223242)
+                              : const Color(0xffbfd4e6),
+                          iconColor: isDark
+                              ? const Color(0xff90caf9)
+                              : const Color(0xff2e4c66),
+                          isDark: isDark,
+                          onTap: _showHelpSupport,
                         ),
-                        Text(
-                          isDark ? 'Mode Gelap Aktif' : 'Mode Terang Aktif',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.white60 : Colors.black54,
-                          ),
+                        _profileOption(
+                          title: 'Keluar (Logout)',
+                          icon: Icons.logout_rounded,
+                          cardColor: cardColor,
+                          iconBoxBg: isDark
+                              ? const Color(0xff3b2020)
+                              : const Color(0xfffad2d2),
+                          iconColor: isDark
+                              ? const Color(0xffff6b6b)
+                              : const Color(0xffc93b3b),
+                          isDark: isDark,
+                          isDestructive: true,
+                          onTap: _handleLogout,
                         ),
                       ],
                     ),
                   ),
-                  _buildSlidingSwitch(
-                    isDark: isDark,
-                    onToggle: widget.toggleTheme,
-                  ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 18),
-
-            // Statistik Tugas
-            Row(
-              children: [
-                Expanded(
-                  child: _statCard(
-                    'Total',
-                    '${taskProvider.allTasks.length}',
-                    Icons.format_list_bulleted,
-                    isDark ? const Color(0xff80cbc4) : const Color(0xff304b46),
-                    cardColor,
-                  ),
+            // ===== Pinned Top Header Melengkung (muncul rapi saat di-scroll ke bawah) =====
+            ClipPath(
+              clipper: _ProfileBackdropClipper(edgeY: pinnedHeaderH - 18),
+              child: Container(
+                width: double.infinity,
+                height: pinnedHeaderH,
+                color: headerColor,
+                padding: EdgeInsets.fromLTRB(22, topInset + 14, 22, 16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Profil Pengguna',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 27,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: _showSettings,
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          color: Colors.white.withOpacity(0.12),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: const Icon(
+                          Icons.settings_outlined,
+                          color: Colors.white,
+                          size: 25,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _statCard(
-                    'Berjalan',
-                    '${taskProvider.inProgressTasks.length}',
-                    Icons.timelapse,
-                    Colors.orange.shade600,
-                    cardColor,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _statCard(
-                    'Selesai',
-                    '${taskProvider.completedTasks.length}',
-                    Icons.check_circle_outline,
-                    Colors.green.shade600,
-                    cardColor,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 22),
-
-            // Options list
-            _profileOption(
-              title: "Edit Profil & Kamera",
-              icon: Icons.edit_outlined,
-              cardColor: cardColor,
-              isDark: isDark,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const EditProfilePage()),
-                );
-              },
-            ),
-            _profileOption(
-              title: "Pengaturan & Tema",
-              icon: Icons.settings_outlined,
-              cardColor: cardColor,
-              isDark: isDark,
-              onTap: _showSettings,
-            ),
-            _profileOption(
-              title: "Bantuan & Dukungan",
-              icon: Icons.help_outline,
-              cardColor: cardColor,
-              isDark: isDark,
-              onTap: _showHelpSupport,
-            ),
-            _profileOption(
-              title: "Keluar (Logout)",
-              icon: Icons.logout,
-              cardColor: cardColor,
-              isDark: isDark,
-              isDestructive: true,
-              onTap: _handleLogout,
+              ),
             ),
           ],
         ),
@@ -643,39 +808,39 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color accentColor, Color cardColor) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _statCard({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color bgColor,
+    required Color accentColor,
+    required Color labelColor,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: bgColor,
+        borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
         children: [
-          Icon(icon, color: accentColor, size: 24),
-          const SizedBox(height: 6),
+          Icon(icon, color: accentColor, size: 28),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
               color: accentColor,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              color: isDark ? Colors.white60 : Colors.grey.shade700,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: labelColor,
             ),
           ),
         ],
@@ -688,54 +853,52 @@ class _ProfilePageState extends State<ProfilePage> {
     required IconData icon,
     required VoidCallback onTap,
     required Color cardColor,
+    required Color iconBoxBg,
+    required Color iconColor,
     required bool isDark,
     bool isDestructive = false,
   }) {
+    final titleColor = isDestructive
+        ? (isDark ? const Color(0xffff6b6b) : const Color(0xffc93b3b))
+        : (isDark ? Colors.white : const Color(0xff111815));
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 13),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
-            color: isDestructive
-                ? Colors.red.withOpacity(0.12)
-                : (isDark ? const Color(0xff2a2a2a) : const Color(0xffe3ece7)),
-            borderRadius: BorderRadius.circular(10),
+            color: iconBoxBg,
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(
-            icon,
-            color: isDestructive
-                ? Colors.redAccent
-                : (isDark ? const Color(0xff80cbc4) : const Color(0xff304b46)),
-            size: 22,
-          ),
+          child: Icon(icon, color: iconColor, size: 24),
         ),
         title: Text(
           title,
           style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: isDestructive
-                ? Colors.redAccent
-                : (isDark ? Colors.white : Colors.black87),
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: titleColor,
           ),
         ),
         trailing: Icon(
-          Icons.arrow_forward_ios,
-          size: 14,
-          color: isDark ? Colors.white38 : Colors.grey,
+          Icons.chevron_right_rounded,
+          size: 24,
+          color: isDark ? Colors.white38 : const Color(0xff8a9490),
         ),
         onTap: onTap,
       ),

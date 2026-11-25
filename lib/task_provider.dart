@@ -53,24 +53,14 @@ class TaskProvider extends ChangeNotifier {
       final existingInProgress = prefs.getString('inProgressTasks');
       final existingCompleted = prefs.getString('completedTasks');
 
-      debugPrint('=== CEK DATA SAAT APLIKASI DIBUKA ===');
-      debugPrint('DATA IN PROGRESS: $existingInProgress');
-      debugPrint('DATA COMPLETED: $existingCompleted');
-
       if (existingInProgress != null || existingCompleted != null) {
         await loadFromLocal();
-
-        debugPrint('JUMLAH TUGAS AKTIF: ${_inProgressTasks.length}');
-        debugPrint('JUMLAH TUGAS SELESAI: ${_completedTasks.length}');
-
         isLoading = false;
         notifyListeners();
         return;
       }
 
-      // Lanjutkan kode API kamu yang sebelumnya
-
-      // Jika belum ada data lokal, ambil data awal dari API.
+      // Ambil data awal dari API jika belum ada cache lokal
       final response = await http.get(
         Uri.parse('https://jsonplaceholder.typicode.com/todos?_limit=5'),
         headers: {'Content-Type': 'application/json'},
@@ -136,8 +126,6 @@ class TaskProvider extends ChangeNotifier {
             .toList();
 
         await _saveToLocal();
-      } else {
-        debugPrint('Gagal fetch API: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Error mengambil tugas: $e');
@@ -147,7 +135,6 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Fungsi pencarian tugas
   List<Map<String, String>> searchTasks(String query) {
     if (query.trim().isEmpty) {
       return [];
@@ -165,13 +152,7 @@ class TaskProvider extends ChangeNotifier {
 
   Future<void> addTask(Map<String, String> task) async {
     _inProgressTasks.add(task);
-
     await _saveToLocal();
-
-    final prefs = await SharedPreferences.getInstance();
-
-    debugPrint('DATA TERSIMPAN: ${prefs.getString('inProgressTasks')}');
-
     notifyListeners();
   }
 
@@ -182,11 +163,87 @@ class TaskProvider extends ChangeNotifier {
   }
 
   Future<void> completeTask(int index) async {
-    final task = Map<String, String>.from(_inProgressTasks[index]);
-    task['time'] = 'Selesai';
+    if (index >= 0 && index < _inProgressTasks.length) {
+      final task = Map<String, String>.from(_inProgressTasks[index]);
+      task['time'] = 'Selesai';
 
-    _completedTasks.add(task);
-    _inProgressTasks.removeAt(index);
+      _completedTasks.add(task);
+      _inProgressTasks.removeAt(index);
+
+      await _saveToLocal();
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleTaskStatus(Map<String, String> task) async {
+    final title = task['title'] ?? '';
+    final desc = task['desc'] ?? '';
+
+    // Cek apakah ada di inProgress
+    final inProgressIndex = _inProgressTasks.indexWhere(
+      (t) => t['title'] == title && t['desc'] == desc,
+    );
+
+    if (inProgressIndex != -1) {
+      final item = Map<String, String>.from(_inProgressTasks[inProgressIndex]);
+      item['time'] = 'Selesai';
+      _completedTasks.add(item);
+      _inProgressTasks.removeAt(inProgressIndex);
+      await _saveToLocal();
+      notifyListeners();
+      return;
+    }
+
+    // Cek apakah ada di completed
+    final completedIndex = _completedTasks.indexWhere(
+      (t) => t['title'] == title && t['desc'] == desc,
+    );
+
+    if (completedIndex != -1) {
+      final item = Map<String, String>.from(_completedTasks[completedIndex]);
+      item['time'] = 'Deadline: Hari ini';
+      _inProgressTasks.add(item);
+      _completedTasks.removeAt(completedIndex);
+      await _saveToLocal();
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateTask(
+    Map<String, String> oldTask,
+    Map<String, String> updatedTask,
+  ) async {
+    final oldTitle = oldTask['title'] ?? '';
+    final oldDesc = oldTask['desc'] ?? '';
+
+    final inProgressIndex = _inProgressTasks.indexWhere(
+      (t) => t['title'] == oldTitle && t['desc'] == oldDesc,
+    );
+
+    if (inProgressIndex != -1) {
+      _inProgressTasks[inProgressIndex] = updatedTask;
+      await _saveToLocal();
+      notifyListeners();
+      return;
+    }
+
+    final completedIndex = _completedTasks.indexWhere(
+      (t) => t['title'] == oldTitle && t['desc'] == oldDesc,
+    );
+
+    if (completedIndex != -1) {
+      _completedTasks[completedIndex] = updatedTask;
+      await _saveToLocal();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteTask(Map<String, String> task) async {
+    final title = task['title'] ?? '';
+    final desc = task['desc'] ?? '';
+
+    _inProgressTasks.removeWhere((t) => t['title'] == title && t['desc'] == desc);
+    _completedTasks.removeWhere((t) => t['title'] == title && t['desc'] == desc);
 
     await _saveToLocal();
     notifyListeners();

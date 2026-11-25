@@ -5,7 +5,6 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/main.dart';
@@ -16,6 +15,6 @@ void main() {
     await tester.pumpWidget(const TaskFlowApp());
 
     // Verify that the login page is displayed
-    expect(find.text('Flex Flow To Do List'), findsOneWidget);
+    expect(find.text('TaskFlow'), findsOneWidget);
   });
 }

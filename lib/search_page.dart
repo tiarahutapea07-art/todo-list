@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'task_provider.dart';
+import 'task_detail_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -11,7 +12,6 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
-
   String _selectedFilter = 'Semua';
 
   @override
@@ -24,6 +24,12 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     final taskProvider = context.watch<TaskProvider>();
     final query = _searchController.text.trim().toLowerCase();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgColor = isDark ? const Color(0xff121212) : const Color(0xffe3ece7);
+    final primaryColor = isDark ? const Color(0xff4a7c6f) : const Color(0xff304b46);
+    final headerBg = isDark ? const Color(0xff1c2824) : const Color(0xff304b46);
+    final cardColor = isDark ? const Color(0xff1e1e1e) : Colors.white;
 
     final results = taskProvider.allTasks.where((task) {
       final title = (task['title'] ?? '').toLowerCase();
@@ -41,9 +47,9 @@ class _SearchPageState extends State<SearchPage> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xffe3ece7),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xff304b46),
+        backgroundColor: headerBg,
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
@@ -58,9 +64,9 @@ class _SearchPageState extends State<SearchPage> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 25),
-              decoration: const BoxDecoration(
-                color: Color(0xff304b46),
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: headerBg,
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(28),
                   bottomRight: Radius.circular(28),
                 ),
@@ -87,22 +93,23 @@ class _SearchPageState extends State<SearchPage> {
                     onChanged: (value) {
                       setState(() {});
                     },
-                    style: const TextStyle(color: Colors.black87),
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                     decoration: InputDecoration(
                       hintText: 'Cari tugas kamu...',
-                      prefixIcon: const Icon(
+                      hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
+                      prefixIcon: Icon(
                         Icons.search,
-                        color: Color(0xff304b46),
+                        color: isDark ? const Color(0xff80cbc4) : const Color(0xff304b46),
                       ),
                       suffixIcon: IconButton(
                         onPressed: () {
                           _searchController.clear();
                           setState(() {});
                         },
-                        icon: const Icon(Icons.close),
+                        icon: Icon(Icons.close, color: isDark ? Colors.white54 : Colors.grey),
                       ),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: isDark ? const Color(0xff292929) : Colors.white,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -119,9 +126,13 @@ class _SearchPageState extends State<SearchPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Kategori tugas',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -137,12 +148,12 @@ class _SearchPageState extends State<SearchPage> {
                             _selectedFilter = filter;
                           });
                         },
-                        selectedColor: const Color(0xff304b46),
-                        backgroundColor: Colors.white,
+                        selectedColor: primaryColor,
+                        backgroundColor: cardColor,
                         labelStyle: TextStyle(
                           color: selected
                               ? Colors.white
-                              : const Color(0xff304b46),
+                              : (isDark ? Colors.white70 : const Color(0xff304b46)),
                           fontWeight: FontWeight.w600,
                         ),
                         side: BorderSide.none,
@@ -160,14 +171,18 @@ class _SearchPageState extends State<SearchPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     'Hasil pencarian',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                   const Spacer(),
                   Text(
                     '${results.length} tugas',
-                    style: const TextStyle(color: Colors.grey),
+                    style: TextStyle(color: isDark ? Colors.white60 : Colors.grey),
                   ),
                 ],
               ),
@@ -184,23 +199,23 @@ class _SearchPageState extends State<SearchPage> {
                           Icon(
                             Icons.search_off_rounded,
                             size: 65,
-                            color: Colors.grey.shade400,
+                            color: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
                           ),
                           const SizedBox(height: 12),
                           Text(
                             query.isEmpty
-                                ? 'Belum ada tugas'
+                                ? 'Belum ada tugas dicari'
                                 : 'Tugas tidak ditemukan',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey,
+                              color: isDark ? Colors.white60 : Colors.grey,
                             ),
                           ),
                           const SizedBox(height: 5),
-                          const Text(
+                          Text(
                             'Coba gunakan kata kunci lainnya.',
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: isDark ? Colors.white38 : Colors.grey),
                           ),
                         ],
                       ),
@@ -212,86 +227,111 @@ class _SearchPageState extends State<SearchPage> {
                         final task = results[index];
                         final isCompleted = task['time'] == 'Selesai';
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 13),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TaskDetailPage(task: task),
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 45,
-                                height: 45,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xffe3ece7),
-                                  borderRadius: BorderRadius.circular(13),
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 13),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: cardColor,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
                                 ),
-                                child: const Icon(
-                                  Icons.task_alt,
-                                  color: Color(0xff304b46),
-                                  size: 25,
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 45,
+                                  height: 45,
+                                  decoration: BoxDecoration(
+                                    color: isCompleted
+                                        ? Colors.green.withOpacity(0.15)
+                                        : (isDark ? const Color(0xff2a2a2a) : const Color(0xffe3ece7)),
+                                    borderRadius: BorderRadius.circular(13),
+                                  ),
+                                  child: Icon(
+                                    isCompleted ? Icons.check_circle : Icons.task_alt,
+                                    color: isCompleted
+                                        ? Colors.green
+                                        : (isDark ? const Color(0xff80cbc4) : const Color(0xff304b46)),
+                                    size: 25,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 13),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      task['title'] ?? '',
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      task['desc'] ?? '',
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.calendar_today_outlined,
-                                          size: 13,
-                                          color: Colors.grey,
+                                const SizedBox(width: 13),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        task['title'] ?? '',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: isCompleted
+                                              ? TextDecoration.lineThrough
+                                              : TextDecoration.none,
+                                          color: isCompleted
+                                              ? Colors.grey
+                                              : (isDark ? Colors.white : Colors.black87),
                                         ),
-                                        const SizedBox(width: 5),
-                                        Expanded(
-                                          child: Text(
-                                            task['time'] ?? '',
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 12,
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        task['desc'] ?? '',
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white60 : Colors.grey,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_today_outlined,
+                                            size: 13,
+                                            color: isDark ? Colors.white38 : Colors.grey,
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Expanded(
+                                            child: Text(
+                                              task['time'] ?? '',
+                                              style: TextStyle(
+                                                color: isCompleted
+                                                    ? Colors.green
+                                                    : (isDark ? const Color(0xff80cbc4) : Colors.grey),
+                                                fontSize: 12,
+                                                fontWeight: isCompleted
+                                                    ? FontWeight.w600
+                                                    : FontWeight.normal,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                isCompleted
-                                    ? Icons.check_circle
-                                    : Icons.radio_button_unchecked,
-                                color: const Color(0xff304b46),
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 14,
+                                  color: isDark ? Colors.white38 : Colors.grey,
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },

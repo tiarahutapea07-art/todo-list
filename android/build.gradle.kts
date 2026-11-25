@@ -1,5 +1,6 @@
 plugins {
-    id("com.google.gms.google-services") version "4.5.0" apply false
+    id("com.google.gms.google-services") version "4.4.4" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.20" apply false
 }
 allprojects {
     repositories {
@@ -20,6 +21,12 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+}
+
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions.freeCompilerArgs.add("-Xskip-metadata-version-check")
+    }
 }
 
 tasks.register<Delete>("clean") {
